@@ -1,0 +1,31 @@
+# Experiment 2 — Dataset size impact (template)
+# Run train.py with --subset and --run-name overrides for each data fraction.
+#
+# Commands to run (Experiment 2):
+#   python train.py --config experiments/configs/resnet18_subset_experiments.yaml \
+#       --subset 0.10 --run-name resnet18_subset_0.10 --epochs 20
+#   python train.py --config experiments/configs/resnet18_subset_experiments.yaml \
+#       --subset 0.25 --run-name resnet18_subset_0.25 --epochs 25
+#   python train.py --config experiments/configs/resnet18_subset_experiments.yaml \
+#       --subset 0.50 --run-name resnet18_subset_0.50 --epochs 28
+#   python train.py --config experiments/configs/resnet18_subset_experiments.yaml \
+#       --subset 1.00 --run-name resnet18_subset_1.00 --epochs 30
+
+run_name: resnet18_subset_template   # overridden by --run-name
+model_name: resnet18
+pretrained: true
+
+epochs: 30           # overridden per run
+batch_size: 32
+lr: 0.0001
+weight_decay: 0.0001
+patience: 5
+
+subset_fraction: 1.0  # overridden by --subset
+
+image_size: 224
+use_horizontal_flip: true
+use_brightness_jitter: true
+use_blur: true
+
+face_detector: mediapipe
