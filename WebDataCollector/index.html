@@ -486,6 +486,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
+  /* ── Session ID ─────────────────────────────────────────────── */
+  // Generated once per page load. Embedded in every filename so that
+  // images from different contributors never collide when merged.
+  const SESSION_ID = Math.random().toString(36).slice(2, 10).toUpperCase();
+
   /* ── State ──────────────────────────────────────────────────── */
   const liveImages  = [];  // { blob, thumbUrl }
   const spoofImages = [];  // { blob, thumbUrl }
@@ -653,18 +658,21 @@
       const spoofDir = zip.folder('spoof');
 
       liveImages.forEach(({ blob }, i) => {
-        liveDir.file(`live_${String(i + 1).padStart(4, '0')}.jpg`, blob);
+        liveDir.file(`live_${SESSION_ID}_${String(i + 1).padStart(4, '0')}.jpg`, blob);
       });
       spoofImages.forEach(({ blob }, i) => {
-        spoofDir.file(`spoof_${String(i + 1).padStart(4, '0')}.jpg`, blob);
+        spoofDir.file(`spoof_${SESSION_ID}_${String(i + 1).padStart(4, '0')}.jpg`, blob);
       });
 
-      const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 4 } });
-      const ts      = new Date().toISOString().slice(0, 10);
+      const content  = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 4 } });
+      const now      = new Date();
+      const datePart = now.toISOString().slice(0, 10);                          // YYYY-MM-DD
+      const timePart = now.toTimeString().slice(0, 8).replace(/:/g, '-');       // HH-MM-SS
+      const ts       = `${datePart}_${timePart}`;
       const url     = URL.createObjectURL(content);
       const a       = document.createElement('a');
       a.href        = url;
-      a.download    = `liveness_data_${ts}.zip`;
+      a.download    = `liveness_data_${ts}_${SESSION_ID}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
