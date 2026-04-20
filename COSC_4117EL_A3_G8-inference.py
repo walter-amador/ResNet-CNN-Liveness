@@ -17,15 +17,19 @@ Code assisted with Claude Code (Anthropic) — cited per course AI-use policy.
 import argparse
 import os
 import time
+import urllib.request
 from collections import deque
 from pathlib import Path
 
 import cv2
+import mediapipe as mp
 import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.models as tv_models
 import torchvision.transforms as T
+from mediapipe.tasks import python as mp_python
+from mediapipe.tasks.python import vision as mp_vision
 from PIL import Image
 
 
@@ -36,6 +40,23 @@ IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 CLASS_NAMES   = {0: 'spoof', 1: 'live'}
 CLASS_COLORS  = {0: (0, 0, 220), 1: (0, 200, 0)}   # BGR: red=spoof, green=live
+
+# MediaPipe Tasks API needs a .tflite model asset — downloaded once, reused.
+# Reference: https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector
+MP_FACE_MODEL_URL  = (
+    'https://storage.googleapis.com/mediapipe-models/face_detector/'
+    'blaze_face_short_range/float16/1/blaze_face_short_range.tflite'
+)
+MP_FACE_MODEL_PATH = Path('models') / 'blaze_face_short_range.tflite'
+
+
+def ensure_mp_face_model(path: Path = MP_FACE_MODEL_PATH) -> str:
+    """Download the BlazeFace (short-range) model if not already cached."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        print(f'Downloading MediaPipe face-detector model → {path}')
+        urllib.request.urlretrieve(MP_FACE_MODEL_URL, str(path))
+    return str(path)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -143,18 +164,33 @@ def run_webcam(
     cam_idx: int = 0,
     padding: float = 0.10,
     threshold: float = 0.5,
+    min_det_confidence: float = 0.5,
 ) -> None:
     """
-    Open webcam, detect faces with OpenCV Haar Cascade, classify each as
-    live/spoof, and display results.
+    Open webcam, detect faces with MediaPipe Face Detection (BlazeFace),
+    classify each as live/spoof, and display results.
+
+    MediaPipe is used instead of Haar because:
+      • It matches the training-time preprocessing (same detector →
+        same crop geometry → no train/inference distribution shift).
+      • It is far more robust to profile / tilted / backlit faces,
+        which are common in anti-spoofing scenarios.
 
     Controls:
         Q — quit
         S — save current frame to saved_frames/
     """
-    face_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+    # BlazeFace short-range (< 2 m) — matches the training-time preprocessor
+    # exactly (see COSC_4117EL_A3_G8-train.ipynb).  Tasks-API usage follows
+    # https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector
+    model_asset_path = ensure_mp_face_model()
+    base_options     = mp_python.BaseOptions(model_asset_path=model_asset_path)
+    options          = mp_vision.FaceDetectorOptions(
+        base_options=base_options,
+        min_detection_confidence=min_det_confidence,
+        running_mode=mp_vision.RunningMode.IMAGE,
     )
+    detector = mp_vision.FaceDetector.create_from_options(options)
 
     cap = cv2.VideoCapture(cam_idx)
     if not cap.isOpened():
@@ -168,79 +204,92 @@ def run_webcam(
 
     print('Webcam open. Press Q to quit, S to save frame.')
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print('Failed to grab frame — exiting.')
-            break
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print('Failed to grab frame — exiting.')
+                break
 
-        frame_count += 1
-        fps_counter.tick()
-        fps = fps_counter.tick()
+            frame_count += 1
+            fps_counter.tick()
+            fps = fps_counter.tick()
 
-        h, w = frame.shape[:2]
+            h, w = frame.shape[:2]
 
-        # ── Face detection ────────────────────────────────────────────────────
-        gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(
-            gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
-        )
+            # ── Face detection (Tasks API expects mp.Image in SRGB) ───────────
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            mp_image  = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+            results   = detector.detect(mp_image)
 
-        if len(faces) > 0:
-            for (fx, fy, fw, fh) in faces:
-                pad_x = int(padding * fw)
-                pad_y = int(padding * fh)
-                x1    = max(0, fx - pad_x)
-                y1    = max(0, fy - pad_y)
-                x2    = min(w, fx + fw + pad_x)
-                y2    = min(h, fy + fh + pad_y)
+            if results.detections:
+                for det in results.detections:
+                    bb = det.bounding_box   # absolute pixels
+                    fx = int(bb.origin_x)
+                    fy = int(bb.origin_y)
+                    fw = int(bb.width)
+                    fh = int(bb.height)
 
-                face_bgr = frame[y1:y2, x1:x2]
-                if face_bgr.size == 0:
-                    continue
-                face_rgb = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2RGB)
+                    # Skip degenerate detections
+                    if fw <= 0 or fh <= 0:
+                        continue
 
-                # ── Classify ─────────────────────────────────────────────────
-                label, spoof_p, live_p = classify_face(face_rgb, model, transform, device, threshold)
-                cls_name = CLASS_NAMES[label]
-                color    = CLASS_COLORS[label]
+                    pad_x = int(padding * fw)
+                    pad_y = int(padding * fh)
+                    x1    = max(0, fx - pad_x)
+                    y1    = max(0, fy - pad_y)
+                    x2    = min(w, fx + fw + pad_x)
+                    y2    = min(h, fy + fh + pad_y)
 
-                # ── Draw bounding box ─────────────────────────────────────────
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    face_bgr = frame[y1:y2, x1:x2]
+                    if face_bgr.size == 0:
+                        continue
+                    face_rgb = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2RGB)
 
-                # ── Label: prediction + both class probabilities ───────────────
-                line1 = f'{cls_name}  (live {live_p*100:.0f}%  spoof {spoof_p*100:.0f}%)'
-                font       = cv2.FONT_HERSHEY_SIMPLEX
-                font_scale = 0.55
-                thickness  = 2
-                (tw, th), _ = cv2.getTextSize(line1, font, font_scale, thickness)
-                ty = max(y1 - 6, th + 4)
-                cv2.rectangle(frame, (x1, ty - th - 4), (x1 + tw + 4, ty + 2), color, -1)
-                cv2.putText(frame, line1, (x1 + 2, ty - 1), font,
-                            font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
-        else:
-            cv2.putText(frame, 'No face detected', (10, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2, cv2.LINE_AA)
+                    # ── Classify ─────────────────────────────────────────────
+                    label, spoof_p, live_p = classify_face(
+                        face_rgb, model, transform, device, threshold
+                    )
+                    cls_name = CLASS_NAMES[label]
+                    color    = CLASS_COLORS[label]
 
-        # ── HUD overlay ───────────────────────────────────────────────────────
-        cv2.putText(frame, f'FPS: {fps:.1f}', (10, 28),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2, cv2.LINE_AA)
-        cv2.putText(frame, f'Q=quit  S=save  thr={threshold:.2f}', (w - 230, 28),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (180, 180, 180), 1, cv2.LINE_AA)
+                    # ── Draw bounding box ────────────────────────────────────
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 
-        cv2.imshow('Face Liveness Detection', frame)
+                    # ── Label: prediction + both class probabilities ──────────
+                    line1 = f'{cls_name}  (live {live_p*100:.0f}%  spoof {spoof_p*100:.0f}%)'
+                    font       = cv2.FONT_HERSHEY_SIMPLEX
+                    font_scale = 0.55
+                    thickness  = 2
+                    (tw, th), _ = cv2.getTextSize(line1, font, font_scale, thickness)
+                    ty = max(y1 - 6, th + 4)
+                    cv2.rectangle(frame, (x1, ty - th - 4), (x1 + tw + 4, ty + 2), color, -1)
+                    cv2.putText(frame, line1, (x1 + 2, ty - 1), font,
+                                font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
+            else:
+                cv2.putText(frame, 'No face detected', (10, 60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2, cv2.LINE_AA)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q') or key == ord('Q'):
-            break
-        if key == ord('s') or key == ord('S'):
-            fname = save_dir / f'frame_{frame_count:06d}.png'
-            cv2.imwrite(str(fname), frame)
-            print(f'Saved: {fname}')
+            # ── HUD overlay ───────────────────────────────────────────────────
+            cv2.putText(frame, f'FPS: {fps:.1f}', (10, 28),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2, cv2.LINE_AA)
+            cv2.putText(frame, f'Q=quit  S=save  thr={threshold:.2f}', (w - 230, 28),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (180, 180, 180), 1, cv2.LINE_AA)
 
-    cap.release()
-    cv2.destroyAllWindows()
-    print('Done.')
+            cv2.imshow('Face Liveness Detection', frame)
+
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q') or key == ord('Q'):
+                break
+            if key == ord('s') or key == ord('S'):
+                fname = save_dir / f'frame_{frame_count:06d}.png'
+                cv2.imwrite(str(fname), frame)
+                print(f'Saved: {fname}')
+    finally:
+        detector.close()
+        cap.release()
+        cv2.destroyAllWindows()
+        print('Done.')
 
 
 # ─────────────────────────────────────────────────────────────────────────────
