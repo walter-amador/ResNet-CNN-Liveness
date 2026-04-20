@@ -1,0 +1,164 @@
+<mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="0" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1080" pageHeight="360" math="0" shadow="1">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- ═══════════════ BACKGROUND ═══════════════ -->
+    <mxCell id="100" value="" style="rounded=3;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="0" y="0" width="1080" height="360" as="geometry" />
+    </mxCell>
+
+    <!-- TITLE -->
+    <mxCell id="101" value="&lt;b&gt;Modified ResNet-18 — Binary Face Liveness Detection&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontColor=#1f2937;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="250" y="6" width="580" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════ SECTION BOXES ═══════════════ -->
+
+    <!-- Frozen Backbone Section -->
+    <mxCell id="200" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;Frozen Backbone / ImageNet Pre-trained&lt;/b&gt;&lt;/font&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#f8fbff;strokeColor=#94a3b8;fontColor=#334155;fontSize=10;fontStyle=0;verticalAlign=top;align=center;dashed=1;dashPattern=8 4;arcSize=3;" vertex="1" parent="1">
+      <mxGeometry x="100" y="26" width="590" height="300" as="geometry" />
+    </mxCell>
+
+    <!-- Trainable Head Section -->
+    <mxCell id="201" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;Trainable Head&lt;/b&gt;&lt;/font&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#38bdf8;fontColor=#0f766e;fontSize=10;fontStyle=0;verticalAlign=top;align=center;dashed=1;dashPattern=8 4;arcSize=3;" vertex="1" parent="1">
+      <mxGeometry x="704" y="26" width="250" height="300" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════ MAIN BLOCKS ═══════════════ -->
+
+    <!-- INPUT -->
+    <mxCell id="10" value="&lt;b&gt;Input&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;224×224&lt;br&gt;RGB Face Crop&lt;/font&gt;" style="shape=cube;size=14;whiteSpace=wrap;html=1;fillColor=#e8f7ee;strokeColor=#2e8b57;fontColor=#14532d;fontSize=9;shadow=1;gradientColor=#d6eedc;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="20" y="186" width="90" height="74" as="geometry" />
+    </mxCell>
+
+    <!-- STEM -->
+    <mxCell id="11" value="&lt;b&gt;Stem&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;7x7/64 + BN/ReLU/Pool&lt;/font&gt;" style="shape=cube;size=13;whiteSpace=wrap;html=1;fillColor=#e8f1fa;strokeColor=#4c78a8;fontColor=#1e3a5f;fontSize=9;shadow=1;gradientColor=#d6e6f7;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="118" y="178" width="88" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- LAYER 1 -->
+    <mxCell id="13" value="&lt;b&gt;Layer 1&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;2x ResBlock, 64&lt;/font&gt;" style="shape=cube;size=11;whiteSpace=wrap;html=1;fillColor=#deebf8;strokeColor=#4c78a8;fontColor=#1f3f63;fontSize=9;shadow=1;gradientColor=#cfe0f3;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="300" y="164" width="80" height="62" as="geometry" />
+    </mxCell>
+
+    <!-- LAYER 2 -->
+    <mxCell id="14" value="&lt;b&gt;Layer 2&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;2x ResBlock, 128&lt;/font&gt;" style="shape=cube;size=10;whiteSpace=wrap;html=1;fillColor=#deebf8;strokeColor=#4c78a8;fontColor=#1f3f63;fontSize=9;shadow=1;gradientColor=#cfe0f3;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="384" y="158" width="76" height="58" as="geometry" />
+    </mxCell>
+
+    <!-- LAYER 3 -->
+    <mxCell id="15" value="&lt;b&gt;Layer 3&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;2x ResBlock, 256&lt;/font&gt;" style="shape=cube;size=9;whiteSpace=wrap;html=1;fillColor=#deebf8;strokeColor=#4c78a8;fontColor=#1f3f63;fontSize=9;shadow=1;gradientColor=#cfe0f3;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="464" y="154" width="72" height="54" as="geometry" />
+    </mxCell>
+
+    <!-- LAYER 4 — FINE-TUNED (ORANGE) -->
+    <mxCell id="16" value="&lt;b&gt;Layer 4&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;2x ResBlock, 512&lt;/font&gt;" style="shape=cube;size=9;whiteSpace=wrap;html=1;fillColor=#fff0e5;strokeColor=#d97706;fontColor=#9a3412;fontSize=9;shadow=1;gradientColor=#ffe2cc;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="540" y="150" width="70" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- Layer 4 Fine-tuned sub-label -->
+    <mxCell id="162" value="Fine-tuned (Phase 2)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#d97706;fontSize=8;fontStyle=2;" vertex="1" parent="1">
+      <mxGeometry x="528" y="208" width="94" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- GLOBAL AVG POOLING -->
+    <mxCell id="17" value="&lt;b&gt;Global Avg&lt;/b&gt;&lt;br&gt;&lt;b&gt;Pooling&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;→ 512-dim&lt;/font&gt;" style="shape=cube;size=8;whiteSpace=wrap;html=1;fillColor=#e8f1fa;strokeColor=#4c78a8;fontColor=#1e3a5f;fontSize=9;shadow=1;gradientColor=#d6e6f7;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="614" y="146" width="74" height="46" as="geometry" />
+    </mxCell>
+
+    <!-- DROPOUT -->
+    <mxCell id="18" value="&lt;b&gt;Dropout&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;p = 0.5&lt;/font&gt;" style="shape=cube;size=8;whiteSpace=wrap;html=1;fillColor=#e6f7fa;strokeColor=#0e7490;fontColor=#155e75;fontSize=9;shadow=1;gradientColor=#d8eef4;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="708" y="142" width="70" height="42" as="geometry" />
+    </mxCell>
+
+    <!-- LINEAR -->
+    <mxCell id="19" value="&lt;b&gt;Linear&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;512 → 2&lt;/font&gt;" style="shape=cube;size=7;whiteSpace=wrap;html=1;fillColor=#e6f7fa;strokeColor=#0e7490;fontColor=#155e75;fontSize=9;shadow=1;gradientColor=#d8eef4;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="782" y="138" width="68" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- LOGITS -->
+    <mxCell id="20" value="&lt;b&gt;Logits&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;CE loss&lt;/font&gt;" style="shape=cube;size=7;whiteSpace=wrap;html=1;fillColor=#e6f7fa;strokeColor=#0e7490;fontColor=#155e75;fontSize=9;shadow=1;gradientColor=#d8eef4;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="854" y="134" width="66" height="38" as="geometry" />
+    </mxCell>
+
+    <!-- TRAINING CALLOUT -->
+    <mxCell id="300" value="&lt;b&gt;Two-phase training&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px;&quot;&gt;Phase 1 (1-5): head only&lt;br&gt;Phase 2 (6-30): layer4 + head&lt;br&gt;LR head 1e-4, layer4 1e-5&lt;/font&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#f59e0b;fontColor=#7c2d12;fontSize=9;shadow=0;" vertex="1" parent="1">
+      <mxGeometry x="710" y="248" width="230" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- OUTPUT: LIVE -->
+    <mxCell id="21" value="&lt;b&gt;Live ✓&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e5f8eb;strokeColor=#16a34a;fontColor=#166534;fontSize=11;fontStyle=1;shadow=1;gradientColor=#d2f1dd;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="944" y="112" width="82" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- OUTPUT: SPOOF -->
+    <mxCell id="22" value="&lt;b&gt;Spoof ✗&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fdecec;strokeColor=#dc2626;fontColor=#991b1b;fontSize=11;fontStyle=1;shadow=1;gradientColor=#fad8d8;gradientDirection=south;" vertex="1" parent="1">
+      <mxGeometry x="944" y="188" width="82" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════ MAIN FLOW ARROWS ═══════════════ -->
+
+    <!-- Input → Conv1 -->
+    <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=2;endArrow=block;endFill=1;fillColor=#64748b;" edge="1" source="10" target="11" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Stem → Layer 1 -->
+    <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=2;endArrow=block;endFill=1;fillColor=#64748b;" edge="1" source="11" target="13" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- L1 → L2 -->
+    <mxCell id="a4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=2;endArrow=block;endFill=1;fillColor=#64748b;" edge="1" source="13" target="14" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- L2 → L3 -->
+    <mxCell id="a5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=2;endArrow=block;endFill=1;fillColor=#64748b;" edge="1" source="14" target="15" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- L3 → L4 -->
+    <mxCell id="a6" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=2;endArrow=block;endFill=1;fillColor=#64748b;" edge="1" source="15" target="16" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- L4 → GAP -->
+    <mxCell id="a7" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=2;endArrow=block;endFill=1;fillColor=#64748b;" edge="1" source="16" target="17" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- GAP → Dropout (crosses section boundary) -->
+    <mxCell id="a8" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=2;endArrow=block;endFill=1;fillColor=#64748b;" edge="1" source="17" target="18" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Dropout → Linear (cyan) -->
+    <mxCell id="a9" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#0e7490;strokeWidth=2;endArrow=block;endFill=1;fillColor=#0e7490;" edge="1" source="18" target="19" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Linear → Softmax (cyan) -->
+    <mxCell id="a10" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#0e7490;strokeWidth=2;endArrow=block;endFill=1;fillColor=#0e7490;" edge="1" source="19" target="20" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Softmax → Live (green) -->
+    <mxCell id="a11" style="edgeStyle=elbowEdgeStyle;elbow=orthogonal;exitX=1;exitY=0.28;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#16a34a;strokeWidth=2;endArrow=block;endFill=1;fillColor=#16a34a;" edge="1" source="20" target="21" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Softmax → Spoof (red) -->
+    <mxCell id="a12" style="edgeStyle=elbowEdgeStyle;elbow=orthogonal;exitX=1;exitY=0.72;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#dc2626;strokeWidth=2;endArrow=block;endFill=1;fillColor=#dc2626;" edge="1" source="20" target="22" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+
+    <!-- Residual blocks imply internal skip connections -->
+    <mxCell id="301" value="Residual skip connections inside each ResBlock" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748b;fontSize=8;fontStyle=2;" vertex="1" parent="1">
+      <mxGeometry x="132" y="50" width="260" height="16" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
